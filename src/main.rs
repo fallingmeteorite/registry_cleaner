@@ -1,9 +1,11 @@
 //! fallingmeteorite
 // main.rs
+mod registry_backup;
 mod registry_check;
 mod registry_delete;
 mod registry_search;
 
+use registry_backup::*;
 use registry_check::*;
 use registry_delete::*;
 use registry_search::*;
@@ -11,9 +13,16 @@ use std::io::{self, Write};
 use winreg::HKEY;
 use winreg::enums::*;
 
+// Windows API相关导入
+use std::ptr;
+use winapi::um::securitybaseapi::CheckTokenMembership;
+use winapi::um::securitybaseapi::FreeSid;
+use winapi::um::winnt::{
+    DOMAIN_ALIAS_RID_ADMINS, PSID, SECURITY_BUILTIN_DOMAIN_RID, SID_IDENTIFIER_AUTHORITY,
+};
+
 // 从 registry_check 模块导入所有需要的类型
 use registry_check::{MatchType, RegistryImportance, SearchResult};
-
 // 将 registry_search::SearchResult 转换为当前 crate 的 SearchResult
 impl From<registry_search::SearchResult> for SearchResult {
     fn from(result: registry_search::SearchResult) -> Self {
@@ -69,10 +78,76 @@ pub struct RootStats {
     pub total_keys: usize,
 }
 
+/// 检查是否以管理员权限运行（Windows系统）
+fn is_running_as_admin() -> bool {
+    unsafe {
+        let mut sia = SID_IDENTIFIER_AUTHORITY {
+            Value: [0, 0, 0, 0, 0, 5], // SECURITY_NT_AUTHORITY
+        };
+        let mut administrators_sid: PSID = ptr::null_mut();
+        let mut is_member = 0;
+
+        // 创建Administrators组的SID
+        if winapi::um::securitybaseapi::AllocateAndInitializeSid(
+            &mut sia,
+            2, // 子权限数量
+            SECURITY_BUILTIN_DOMAIN_RID,
+            DOMAIN_ALIAS_RID_ADMINS,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            &mut administrators_sid,
+        ) == 0
+        {
+            return false;
+        }
+
+        // 检查当前进程是否是管理员组的成员
+        let result = CheckTokenMembership(ptr::null_mut(), administrators_sid, &mut is_member);
+
+        // 释放SID内存
+        FreeSid(administrators_sid);
+
+        result != 0 && is_member != 0
+    }
+}
+
 /// 显示程序标题和版本信息
 fn show_program_title() {
     println!("注册表清理工具 v1.0");
     println!();
+}
+
+/// 执行注册表备份（直接进行完整备份）
+fn perform_registry_backup() -> Result<bool, Box<dyn std::error::Error>> {
+    println!("注册表备份");
+    println!("{}", "─".repeat(60));
+
+    // 直接进行完整备份
+    println!("开始完整备份注册表...");
+    let backup = RegistryBackup::new();
+    let result = backup.backup_full_registry();
+
+    println!();
+    if result.success {
+        println!("✓ 备份成功！");
+        println!("备份路径: {}", result.backup_path);
+        println!("{}", "═".repeat(60));
+        Ok(true)
+    } else {
+        println!("✗ 备份失败！");
+        println!("错误信息: {}", result.message);
+        print!("是否继续？(y/N): ");
+        io::stdout().flush()?;
+
+        let mut continue_answer = String::new();
+        io::stdin().read_line(&mut continue_answer)?;
+
+        Ok(continue_answer.trim().to_lowercase() == "y")
+    }
 }
 
 /// 加载特征库文件
@@ -582,16 +657,79 @@ fn get_registry_roots() -> Vec<(HKEY, &'static str)> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 检查是否以管理员权限运行
+    if !is_running_as_admin() {
+        println!("{}", "═".repeat(60));
+        println!("警告：权限不足！");
+        println!("{}", "─".repeat(60));
+        println!("注册表操作需要管理员权限。");
+        println!("请以管理员身份重新运行此程序。");
+        println!("{}", "═".repeat(60));
+
+        // 等待用户按键
+        println!();
+        print!("按任意键退出...");
+        io::stdout().flush()?;
+        let _ = io::stdin().read_line(&mut String::new());
+
+        return Ok(());
+    }
+
     // 显示程序标题
     show_program_title();
 
-    // 步骤1: 加载特征库
+    // 步骤1: 询问是否备份
+    println!("{}", "═".repeat(60));
+    println!("注册表清理工具 v1.1");
+    println!("{}", "═".repeat(60));
+
+    print!("是否在执行清理前备份注册表？(Y/n): ");
+    io::stdout().flush()?;
+
+    let mut backup_choice = String::new();
+    io::stdin().read_line(&mut backup_choice)?;
+    let backup_choice = backup_choice.trim().to_lowercase();
+
+    // 默认为是，除非用户明确输入n或no
+    let should_backup = backup_choice.is_empty() || backup_choice == "y" || backup_choice == "yes";
+
+    if should_backup {
+        println!();
+        println!("{}", "═".repeat(60));
+        println!("步骤 1: 注册表备份");
+        println!("{}", "═".repeat(60));
+
+        let backup_successful = perform_registry_backup()?;
+        if !backup_successful {
+            print!("是否继续执行搜索和清理？(y/N): ");
+            io::stdout().flush()?;
+
+            let mut continue_choice = String::new();
+            io::stdin().read_line(&mut continue_choice)?;
+            let continue_choice = continue_choice.trim().to_lowercase();
+
+            if continue_choice != "y" && continue_choice != "yes" {
+                println!("程序已终止。");
+                show_program_completion();
+                return Ok(());
+            }
+        }
+    } else {
+        println!("跳过备份步骤。");
+    }
+
+    println!();
+    println!("{}", "═".repeat(60));
+    println!("步骤 2: 特征库加载");
+    println!("{}", "═".repeat(60));
+
+    // 步骤2: 加载特征库
     let checker = load_features_library();
 
-    // 步骤2: 获取用户输入的关键字
+    // 步骤3: 获取用户输入的关键字
     let keyword = get_search_keyword()?;
 
-    // 步骤3: 在注册表中搜索关键字
+    // 步骤4: 在注册表中搜索关键字
     let all_results = search_in_registry(&keyword);
 
     // 如果没有找到结果，提前结束
@@ -600,14 +738,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // 步骤4: 进行安全检查
+    // 步骤5: 进行安全检查
     let assessed_results = perform_safety_check(&all_results, &checker);
 
-    // 步骤5: 显示详细结果
+    // 步骤6: 显示详细结果
     show_detailed_results(&assessed_results, &checker);
 
-    // 步骤6和7: 处理删除操作
-    handle_deletion_process(&assessed_results)?;
+    // 步骤7: 询问是否进行删除操作
+    if !assessed_results.is_empty() {
+        println!();
+        println!("{}", "═".repeat(60));
+        println!("步骤 7: 删除操作");
+        println!("{}", "═".repeat(60));
+
+        print!("是否要对搜索结果进行处理？(Y/n): ");
+        io::stdout().flush()?;
+
+        let mut process_choice = String::new();
+        io::stdin().read_line(&mut process_choice)?;
+        let process_choice = process_choice.trim().to_lowercase();
+
+        // 默认为是，除非用户明确输入n或no
+        let should_process =
+            process_choice.is_empty() || process_choice == "y" || process_choice == "yes";
+
+        if should_process {
+            handle_deletion_process(&assessed_results)?;
+        } else {
+            println!("跳过删除操作。");
+        }
+    }
 
     // 程序结束
     show_program_completion();
