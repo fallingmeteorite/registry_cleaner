@@ -1,3 +1,4 @@
+//! fallingmeteorite
 // registry_delete.rs
 use winreg::HKEY;
 use winreg::RegKey;
