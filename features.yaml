@@ -1,0 +1,508 @@
+# ==============================================================================
+# 注册表特征库配置文件 (YAML格式)
+# 版本: 2.0.0
+# 最后更新: 2024年
+# 作者: Registry Cleaner Team
+# 说明: 此文件定义了注册表路径的风险等级分类
+# ==============================================================================
+
+# ==============================================================================
+# 系统关键路径 (system_critical)
+# 风险等级: 最高 - 绝对不能删除
+# 影响: 删除会导致系统无法启动、蓝屏、功能永久性丧失
+# ==============================================================================
+system_critical:
+  # ==================== Windows系统核心注册表根键 ====================
+  - HKEY_LOCAL_MACHINE\SYSTEM                                        # Windows系统配置根键，包含所有硬件和系统设置
+  - HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet                     # 当前活动的控制系统设置，包含驱动和服务配置
+  - HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001                         # 控制系统备份1（通常用于系统还原）
+  - HKEY_LOCAL_MACHINE\SYSTEM\ControlSet002                         # 控制系统备份2（系统还原点）
+  - HKEY_LOCAL_MACHINE\SYSTEM\Select                                # 系统启动选择配置，决定使用哪个ControlSet
+
+  # ==================== 硬件抽象层配置 ====================
+  - HKEY_LOCAL_MACHINE\HARDWARE                                     # 硬件配置信息根键，存储所有硬件信息
+  - HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION                         # 硬件设备描述信息（设备管理器显示的内容）
+  - HKEY_LOCAL_MACHINE\HARDWARE\DEVICEMAP                           # 设备映射表，将硬件映射到驱动
+  - HKEY_LOCAL_MACHINE\HARDWARE\RESOURCEMAP                         # 系统资源映射（IRQ、DMA、内存范围）
+
+  # ==================== Windows安全子系统 ====================
+  - HKEY_LOCAL_MACHINE\SAM                                          # 安全账户管理器，存储所有用户账户和密码哈希
+  - HKEY_LOCAL_MACHINE\SECURITY                                     # 系统安全策略和权限设置，包含访问控制列表
+
+  # ==================== COM/DCOM/OLE组件注册 ====================
+  - HKEY_CLASSES_ROOT\CLSID                                         # 类标识符，所有COM组件的唯一标识符
+  - HKEY_CLASSES_ROOT\Interface                                     # COM接口定义，组件间通信的契约
+  - HKEY_CLASSES_ROOT\AppID                                         # COM应用程序标识符，用于DCOM配置
+  - HKEY_CLASSES_ROOT\TypeLib                                       # 类型库信息，包含COM组件的类型定义
+
+  # ==================== Windows NT核心配置 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion                         # Windows NT版本核心配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon               # Windows登录管理器，控制用户登录过程
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options  # 映像劫持设置，调试和监控工具使用
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Svchost                # 服务宿主配置，管理Windows服务进程
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Drivers                # 核心驱动程序配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Drivers32              # 32位驱动程序兼容性配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkCards           # 网络适配器硬件配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print                  # 打印机和打印服务配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList            # 用户配置文件列表，包含用户SID和路径
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Terminal Server        # 远程桌面服务配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Time Zones             # 系统时区配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows                # Windows子系统核心参数
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\GRE_Initialize         # 图形渲染引擎初始化参数
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug                # 应用程序错误调试配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Debug                  # 系统调试设置
+
+  # ==================== Windows安全中心 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender                                # Windows Defender主配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Exclusions                     # Defender排除项设置（文件和文件夹）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Features                       # Defender功能开关
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\MpEngine                       # 恶意软件防护引擎配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Nis                            # 网络检查系统配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\ProductStatus                  # Defender产品状态信息
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Real-Time Protection           # 实时防护设置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Scan                           # 扫描引擎配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Security Center                # 安全中心通知设置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Threats                        # 威胁处理策略
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\User Interface                 # Defender用户界面设置
+
+  # ==================== 系统认证和身份验证 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication           # Windows认证子系统
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers  # 凭据提供程序
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\PLAP Providers  # PLAP提供程序
+
+  # ==================== Shell和桌面环境 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders   # 系统Shell文件夹路径
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders  # 用户Shell文件夹路径
+
+  # ==================== 软件安装和卸载管理 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall                # 已安装程序列表（控制面板中显示）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer               # Windows Installer服务和配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup                   # Windows安装程序和升级配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate           # Windows更新服务和配置
+
+  # ==================== 组件和服务管理 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing  # 基于组件的服务（CBS），Windows更新核心
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\SideBySide                # 并行程序集配置（WinSxS）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\SharedDLLs                # 共享DLL引用计数
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths                 # 应用程序路径映射
+
+  # ==================== 驱动和文件系统 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverDatabase            # 驱动程序签名和数据库
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\EFS                       # 加密文件系统配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Event Viewer              # 事件查看器配置
+
+  # ==================== 字体和显示系统 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Fonts                     # 系统字体注册表
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\FontSubstitutes           # 字体替换规则
+
+  # ==================== 组策略和企业管理 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy              # 组策略引擎配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\History      # 组策略应用历史
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State        # 组策略状态信息
+
+  # ==================== 网络和Internet配置 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings         # Internet Explorer和系统网络配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies                  # 系统策略设置
+
+  # ==================== 系统可靠性和性能 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability               # 可靠性监控配置
+
+  # ==================== 系统启动管理 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce                   # 一次性启动项（安装程序常用）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices               # 服务启动项（已弃用但仍有系统使用）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServicesOnce           # 一次性服务启动项
+
+  # ==================== 系统服务配置 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Telephony                 # 电话API配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes                    # Windows主题服务
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT                    # Windows事件日志配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Winsock                   # Windows套接字配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WSMAN                     # Windows远程管理配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WUDF                      # Windows用户模式驱动框架
+
+  # ==================== 系统用户账户 ====================
+  - HKEY_USERS\.DEFAULT                                               # 默认用户配置文件模板
+  - HKEY_USERS\S-1-5-18                                              # 本地系统账户（SYSTEM）- 最高权限
+  - HKEY_USERS\S-1-5-19                                              # 本地服务账户（LocalService）
+  - HKEY_USERS\S-1-5-20                                              # 网络服务账户（NetworkService）
+  - HKEY_USERS\S-1-5-21                                              # 本地用户账户根（所有本地用户）
+
+  # ==================== 当前硬件配置 ====================
+  - HKEY_CURRENT_CONFIG                                              # 当前硬件配置文件
+  - HKEY_CURRENT_CONFIG\Software                                     # 硬件相关软件配置
+  - HKEY_CURRENT_CONFIG\System                                       # 硬件系统配置
+  - HKEY_CURRENT_CONFIG\System\CurrentControlSet                     # 当前硬件控制集
+
+  # ==================== 引导管理器 ====================
+  - HKEY_LOCAL_MACHINE\BCD00000000                                   # 引导配置数据库（Windows Vista+）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Boot Manager               # 引导管理器配置
+
+  # ==================== 系统还原和恢复 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore  # 系统还原配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Recovery       # Windows恢复环境
+
+# ==============================================================================
+# 高度危险路径 (high_risk)
+# 风险等级: 高 - 强烈建议删除（人工审核确认）
+# 特征: 恶意软件常利用的位置、可疑的自启动项、非常规执行路径
+# 影响: 可能包含恶意软件、广告软件、间谍软件、挖矿软件
+# ==============================================================================
+high_risk:
+  # ==================== 通用自启动模式（恶意软件黄金位置） ====================
+  - Run\                                                              # 用户和系统自启动目录（最常被利用）
+  - RunOnce\                                                          # 一次性自启动（常用于安装后清理或恶意持久化）
+  - RunServices                                                       # 服务启动项（旧系统，仍有效）
+  - RunServicesOnce                                                   # 一次性服务启动
+  - Policies\Explorer\Run                                             # 组策略中的运行项（绕过常规监控）
+
+  # ==================== 完整的自启动路径 ====================
+  - Microsoft\Windows\CurrentVersion\Run                               # 当前用户自启动
+  - Microsoft\Windows\CurrentVersion\RunOnce                           # 当前用户一次性启动
+  - Microsoft\Windows\CurrentVersion\RunServices                       # 当前用户服务启动
+  - Microsoft\Windows\CurrentVersion\RunServicesOnce                   # 当前用户一次性服务启动
+
+  # ==================== Shell命令劫持点（文件关联攻击） ====================
+  - \Shell\Open\Command                                                 # 打开文件执行的命令
+  - \Shell\Open\DDEExec                                                 # DDE执行命令（Office相关）
+  - \Shell\Print\Command                                                # 打印命令
+  - \Shell\PrintTo\Command                                              # 打印到命令
+  - \command\                                                           # 通用命令执行
+  - \ShellEx\                                                           # Shell扩展点
+  - \ShellEx\ContextMenuHandlers                                        # 右键菜单处理器
+  - \ShellEx\PropertySheetHandlers                                      # 属性页处理器
+
+  # ==================== 浏览器辅助对象（BHO - 恶意扩展） ====================
+  - Browser Helper Objects                                              # IE浏览器辅助对象
+  - Browser Helper Objects\{GUID}                                       # 具体的BHO GUID
+  - Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects    # 完整BHO路径
+
+  # ==================== Windows登录劫持点 ====================
+  - Winlogon\                                                           # Windows登录管理器
+  - ShellExecuteHooks                                                   # Shell执行钩子
+  - AppInit_DLLs                                                        # 应用程序初始化DLL注入
+  - Explorer\SharedTaskScheduler                                        # 共享任务调度器
+  - Image File Execution Options\                                       # 映像劫持目录
+
+  # ==================== 可疑的临时/伪装文件名 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\temp        # 临时文件启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\tmp         # 临时文件启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\temp.exe    # 临时可执行文件
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\tmp.exe     # 临时可执行文件
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\setup       # 伪装安装程序
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\install     # 伪装安装程序
+
+  # ==================== 系统进程伪装（无数字签名可疑） ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\svchost     # 服务宿主伪装
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\lsass       # 本地安全认证服务伪装
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\wininit     # Windows初始化伪装
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\smss        # 会话管理器伪装
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\csrss       # 客户端服务器运行时伪装
+
+  # ==================== 系统工具滥用 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\rundll32    # DLL加载器滥用
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\regsvr32    # 注册服务器滥用
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\dllhost     # COM宿主滥用
+
+  # ==================== 脚本和命令行工具滥用 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\cmd         # 命令提示符启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\powershell  # PowerShell启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\wscript     # Windows脚本宿主
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\cscript     # 命令行脚本宿主
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\mshta       # HTML应用宿主
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\regedit     # 注册表编辑器启动
+
+  # ==================== 系统管理工具异常启动 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\taskmgr     # 任务管理器启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\explorer    # 资源管理器启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\services    # 服务管理器启动
+
+  # ==================== 办公软件异常启动 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\notepad     # 记事本启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\calc        # 计算器启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\mspaint     # 画图启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\wordpad     # 写字板启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\winword     # Word启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\excel       # Excel启动
+
+  # ==================== 浏览器异常启动 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\iexplore    # IE浏览器启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\chrome      # Chrome启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\firefox     # Firefox启动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\edge        # Edge启动
+
+  # ==================== P2P和文件共享软件 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\utorrent    # μTorrent
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\bittorrent  # BitTorrent
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\vuze        # Vuze
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\emule       # eMule
+
+  # ==================== 匿名和隐私工具 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\tor         # Tor匿名网络
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\vpn         # VPN客户端
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\proxy       # 代理工具
+
+  # ==================== HKCU中的相同风险项 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\temp         # 用户临时启动
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\tmp          # 用户临时启动
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\svchost      # 用户svchost启动
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\rundll32     # 用户DLL加载器
+
+  # ==================== 浏览器扩展劫持点 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\ShellServiceObjectDelayLoad
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellExecuteHooks
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SharedTaskScheduler
+
+  # ==================== Winlogon关键劫持点 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Shell
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Userinit
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Taskman
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\UIHost
+
+  # ==================== Shell图标覆盖劫持 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\
+
+  # ==================== 自动播放劫持 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer\NoDriveTypeAutoRun
+
+  # ==================== 计划任务劫持 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tasks
+
+  # ==================== 服务劫持 ====================
+  - HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\                          # 服务配置根目录
+  - HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Parameters                # 服务参数
+
+  # ==================== 驱动劫持 ====================
+  - HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\                          # 驱动服务
+  - HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\                              # 设备枚举
+
+  # ==================== WMI劫持 ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM                                     # WMI配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM\CIMOM                               # CIM对象管理器
+
+# ==============================================================================
+# 安全部分路径 (safe)
+# 风险等级: 低 - 可以安全删除
+# 特征: 用户应用程序设置、个性化配置、非系统关键功能
+# 影响: 删除可能重置软件设置或用户偏好，但不会影响系统运行
+# ==============================================================================
+safe:
+  # ==================== 通用用户软件配置目录 ====================
+  - Software\                                                                      # 用户和系统软件配置根目录
+  - Control Panel                                                                  # 控制面板小程序配置
+  - AppEvents                                                                      # 应用程序事件声音方案
+  - Keyboard Layout                                                                # 键盘布局和输入法
+  - Microsoft\Windows\CurrentVersion\Explorer                                      # 资源管理器用户设置
+  - Microsoft\Windows\CurrentVersion\Internet Settings                             # Internet选项设置
+  - Microsoft\Office                                                               # Office系列软件配置
+  - Policies\Microsoft                                                             # Microsoft产品策略
+
+  # ==================== 用户配置根键 ====================
+  - HKEY_CURRENT_USER\Software                                                     # 当前用户所有软件配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Classes                                            # 系统文件关联（用户可修改部分）
+  - HKEY_CURRENT_USER\Software\Classes                                             # 用户文件关联覆盖
+  - HKEY_CURRENT_USER\Control Panel                                                # 用户控制面板设置
+
+  # ==================== 策略设置（用户可修改） ====================
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Policies                                           # 系统策略（非关键部分）
+  - HKEY_CURRENT_USER\Software\Policies                                            # 用户策略
+
+  # ==================== 微软办公软件配置 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\Office                                    # 用户Office设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Office\Common                             # Office通用设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Office\Word                               # Word设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Office\Excel                              # Excel设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Office\PowerPoint                         # PowerPoint设置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office                                   # 系统Office设置
+
+  # ==================== Adobe系列软件 ====================
+  - HKEY_CURRENT_USER\Software\Adobe                                               # Adobe用户设置
+  - HKEY_CURRENT_USER\Software\Adobe\Acrobat                                       # Acrobat PDF阅读器
+  - HKEY_CURRENT_USER\Software\Adobe\Photoshop                                     # Photoshop
+  - HKEY_CURRENT_USER\Software\Adobe\Illustrator                                   # Illustrator
+  - HKEY_CURRENT_USER\Software\Adobe\Premiere Pro                                  # Premiere Pro
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Adobe                                              # Adobe系统设置
+
+  # ==================== 浏览器软件配置 ====================
+  - HKEY_CURRENT_USER\Software\Google                                              # Google软件
+  - HKEY_CURRENT_USER\Software\Google\Chrome                                       # Chrome浏览器
+  - HKEY_CURRENT_USER\Software\Mozilla                                             # Mozilla软件
+  - HKEY_CURRENT_USER\Software\Mozilla\Firefox                                     # Firefox浏览器
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit    # 注册表编辑器设置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Google                                             # Google系统设置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Mozilla                                            # Mozilla系统设置
+
+  # ==================== 苹果相关软件 ====================
+  - HKEY_CURRENT_USER\Software\Apple                                               # Apple用户设置
+  - HKEY_CURRENT_USER\Software\Apple Computer                                      # 苹果电脑软件
+  - HKEY_CURRENT_USER\Software\Apple Inc.                                          # 苹果公司软件
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Apple                                              # 苹果系统设置
+
+  # ==================== 硬件厂商驱动配置 ====================
+  - HKEY_CURRENT_USER\Software\Intel                                               # Intel软件用户设置
+  - HKEY_CURRENT_USER\Software\Intel\Display                                       # Intel显示驱动
+  - HKEY_CURRENT_USER\Software\Intel\Wireless                                      # Intel无线驱动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Intel                                              # Intel系统设置
+
+  - HKEY_CURRENT_USER\Software\AMD                                                 # AMD用户设置
+  - HKEY_CURRENT_USER\Software\AMD\Chipset                                         # AMD芯片组
+  - HKEY_CURRENT_USER\Software\AMD\Display                                         # AMD显示驱动
+  - HKEY_LOCAL_MACHINE\SOFTWARE\AMD                                                # AMD系统设置
+
+  - HKEY_CURRENT_USER\Software\NVIDIA                                              # NVIDIA用户设置
+  - HKEY_CURRENT_USER\Software\NVIDIA Corporation                                  # NVIDIA公司软件
+  - HKEY_CURRENT_USER\Software\NVIDIA Corporation\NVIDIA Control Panel             # NVIDIA控制面板
+  - HKEY_LOCAL_MACHINE\SOFTWARE\NVIDIA                                             # NVIDIA系统设置
+
+  # ==================== 声卡和音频软件 ====================
+  - HKEY_CURRENT_USER\Software\Realtek                                             # Realtek音频用户设置
+  - HKEY_CURRENT_USER\Software\Realtek Semiconductor                               # Realtek半导体
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Realtek                                            # Realtek系统设置
+
+  - HKEY_CURRENT_USER\Software\Creative                                            # Creative创新科技
+  - HKEY_CURRENT_USER\Software\Creative Technology                                 # 创新科技
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Creative                                           # Creative系统设置
+
+  # ==================== 外设厂商软件 ====================
+  - HKEY_CURRENT_USER\Software\Logitech                                            # Logitech罗技
+  - HKEY_CURRENT_USER\Software\Logitech\MouseWare                                  # 罗技鼠标软件
+  - HKEY_CURRENT_USER\Software\Logitech\Options                                    # 罗技选项
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Logitech                                           # Logitech系统设置
+
+  - HKEY_CURRENT_USER\Software\Razer                                               # Razer雷蛇
+  - HKEY_CURRENT_USER\Software\Razer Inc                                           # 雷蛇公司
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Razer                                              # Razer系统设置
+
+  # ==================== 电脑制造商软件 ====================
+  - HKEY_CURRENT_USER\Software\HP                                                  # 惠普用户设置
+  - HKEY_CURRENT_USER\Software\Hewlett-Packard                                     # 惠普公司
+  - HKEY_LOCAL_MACHINE\SOFTWARE\HP                                                 # 惠普系统设置
+
+  - HKEY_CURRENT_USER\Software\Dell                                                # 戴尔用户设置
+  - HKEY_CURRENT_USER\Software\Dell Inc.                                           # 戴尔公司
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Dell                                               # 戴尔系统设置
+
+  - HKEY_CURRENT_USER\Software\Lenovo                                              # 联想用户设置
+  - HKEY_CURRENT_USER\Software\Lenovo Group Ltd.                                   # 联想集团
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Lenovo                                             # 联想系统设置
+
+  - HKEY_CURRENT_USER\Software\ASUS                                                # 华硕用户设置
+  - HKEY_CURRENT_USER\Software\ASUSTeK Computer                                    # 华硕电脑
+  - HKEY_LOCAL_MACHINE\SOFTWARE\ASUS                                               # 华硕系统设置
+
+  - HKEY_CURRENT_USER\Software\Acer                                                # 宏碁用户设置
+  - HKEY_CURRENT_USER\Software\Acer Incorporated                                   # 宏碁公司
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Acer                                               # 宏碁系统设置
+
+  # ==================== 其他电脑品牌 ====================
+  - HKEY_CURRENT_USER\Software\Toshiba                                             # 东芝用户设置
+  - HKEY_CURRENT_USER\Software\Sony                                                # 索尼用户设置
+  - HKEY_CURRENT_USER\Software\Samsung                                             # 三星用户设置
+  - HKEY_CURRENT_USER\Software\LG                                                  # LG用户设置
+  - HKEY_CURRENT_USER\Software\Panasonic                                           # 松下用户设置
+  - HKEY_CURRENT_USER\Software\Sharp                                               # 夏普用户设置
+  - HKEY_CURRENT_USER\Software\Philips                                             # 飞利浦用户设置
+
+  # ==================== 资源管理器用户历史记录 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs        # 最近文档
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU            # 运行命令历史
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32          # 通用对话框历史
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced          # 资源管理器高级选项
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Streams           # 文件夹视图流
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\StreamMRU         # 流最近使用
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2      # 磁盘挂载点
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths        # 输入路径历史
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\WordWheelQuery    # 搜索查询历史
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts          # 文件扩展名关联
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons  # 隐藏桌面图标
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects     # 视觉效果设置
+
+  # ==================== Windows主题和个性化 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes            # 主题设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ThemeManager      # 主题管理器
+  - HKEY_CURRENT_USER\Control Panel\Desktop                                       # 桌面设置
+  - HKEY_CURRENT_USER\Control Panel\Colors                                        # 颜色方案
+  - HKEY_CURRENT_USER\Control Panel\Cursors                                       # 鼠标指针
+  - HKEY_CURRENT_USER\Control Panel\Sound                                         # 声音方案
+
+  # ==================== 用户策略和限制 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer  # 资源管理器策略
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\System    # 系统策略
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Group Policy       # 组策略历史
+
+  # ==================== Windows附件小程序 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets            # 附件小程序
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\Paint      # 画图设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\Wordpad    # 写字板设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\Magnify    # 放大镜设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\Narrator   # 讲述人设置
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\OnScreenKeyboard  # 屏幕键盘
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\StickyNotes        # 便利贴
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\SnippingTool       # 截图工具
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\SoundRecorder      # 录音机
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\Calculator         # 计算器
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Applets\Notepad           # 记事本
+
+  # ==================== 游戏和娱乐软件 ====================
+  - HKEY_CURRENT_USER\Software\Blizzard Entertainment                              # 暴雪娱乐
+  - HKEY_CURRENT_USER\Software\Electronic Arts                                     # 艺电
+  - HKEY_CURRENT_USER\Software\Ubisoft                                             # 育碧
+  - HKEY_CURRENT_USER\Software\Valve                                               # Valve
+  - HKEY_CURRENT_USER\Software\Valve\Steam                                         # Steam平台
+  - HKEY_CURRENT_USER\Software\Riot Games                                          # 拳头游戏
+
+  # ==================== 开发工具和IDE ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\VisualStudio                              # Visual Studio
+  - HKEY_CURRENT_USER\Software\JetBrains                                           # JetBrains
+  - HKEY_CURRENT_USER\Software\Notepad++                                           # Notepad++
+  - HKEY_CURRENT_USER\Software\Sublime Text                                        # Sublime Text
+
+  # ==================== 媒体播放器 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\MediaPlayer                               # Windows Media Player
+  - HKEY_CURRENT_USER\Software\VideoLAN                                            # VLC
+  - HKEY_CURRENT_USER\Software\Winamp                                              # Winamp
+
+  # ==================== 压缩和解压软件 ====================
+  - HKEY_CURRENT_USER\Software\7-Zip                                               # 7-Zip
+  - HKEY_CURRENT_USER\Software\WinRAR                                              # WinRAR
+  - HKEY_CURRENT_USER\Software\WinZip                                              # WinZip
+
+  # ==================== 即时通讯软件 ====================
+  - HKEY_CURRENT_USER\Software\Tencent                                             # 腾讯
+  - HKEY_CURRENT_USER\Software\Tencent\QQ                                          # QQ
+  - HKEY_CURRENT_USER\Software\Tencent\WeChat                                      # 微信
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows Live                             # Windows Live
+  - HKEY_CURRENT_USER\Software\Skype                                               # Skype
+
+  # ==================== 虚拟机和容器 ====================
+  - HKEY_CURRENT_USER\Software\VMware                                              # VMware
+  - HKEY_CURRENT_USER\Software\Oracle\VirtualBox                                   # VirtualBox
+  - HKEY_CURRENT_USER\Software\Docker Inc.                                         # Docker
+
+  # ==================== 安全软件（非Windows Defender） ====================
+  - HKEY_CURRENT_USER\Software\Avira                                               # Avira小红伞
+  - HKEY_CURRENT_USER\Software\Avast                                               # Avast
+  - HKEY_CURRENT_USER\Software\AVG                                                 # AVG
+  - HKEY_CURRENT_USER\Software\KasperskyLab                                        # 卡巴斯基
+  - HKEY_CURRENT_USER\Software\ESET                                                # ESET NOD32
+
+  # ==================== 云存储和同步软件 ====================
+  - HKEY_CURRENT_USER\Software\Dropbox                                             # Dropbox
+  - HKEY_CURRENT_USER\Software\Google\Drive                                        # Google Drive
+  - HKEY_CURRENT_USER\Software\Microsoft\OneDrive                                  # OneDrive
+  - HKEY_CURRENT_USER\Software\Box                                                 # Box
+
+  # ==================== 用户自定义路径 ====================
+  - HKEY_CURRENT_USER\Software\MyApp                                               # 用户自定义应用
+  - HKEY_CURRENT_USER\Software\MyCompany                                           # 用户公司软件
+  - HKEY_CURRENT_USER\Software\Custom                                              # 自定义软件设置
+
+  # ==================== 临时和缓存数据 ====================
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\MenuOrder  # 菜单顺序缓存
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\CLSID      # CLSID缓存
+  - HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\Bags                         # Shell视图包
