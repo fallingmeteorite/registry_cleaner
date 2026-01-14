@@ -1,3 +1,4 @@
+//! fallingmeteorite
 // main.rs
 mod registry_check;
 mod registry_delete;
