@@ -1,8 +1,6 @@
-//! 注册表搜索库
-//!
-//! 提供Windows注册表搜索功能，支持递归搜索键名、值名和值数据。
-//! 包含进度报告和统计功能。
-
+//! fallingmeteorite
+// 提供Windows注册表搜索功能,支持递归搜索键名,值名和值数据,包含进度报告和统计功能
+// registry_search.rs
 use winreg::RegKey;
 use winreg::RegValue;
 use winreg::enums::*;
