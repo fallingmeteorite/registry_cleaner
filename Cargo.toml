@@ -1,9 +1,10 @@
 [package]
 name = "registry_cleaner"
-version = "0.1.0"
+version = "1.1.0"
 edition = "2024"
 
 [dependencies]
-winreg = "0.55.0"
+winapi = { version = "0.3.9", features = ["winbase", "securitybaseapi", "sddl", "winnt"] }
 serde = { version = "1.0.228", features = ["derive"] }
+winreg = "0.55.0"
 serde_yaml = "0.9.33"
