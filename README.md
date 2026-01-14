@@ -2,7 +2,8 @@
 一个用于清理注册表的工具
 
 # 使用
-点击`registry_cleaner.exe`启动输入关键字即可
+
+右键`registry_cleaner.exe`使用管理员运行输入关键字即可
 
 # 构建
 
