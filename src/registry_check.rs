@@ -1,3 +1,4 @@
+//! fallingmeteorite
 // registry_check.rs
 use std::fs;
 
