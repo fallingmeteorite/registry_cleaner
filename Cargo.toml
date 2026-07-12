@@ -1,10 +1,25 @@
 [package]
 name = "registry_cleaner"
 version = "1.1.0"
-edition = "2024"
+edition = "2021"
+description = "注册表清理工具 - 搜索并删除注册表中的匹配项"
+license = "MIT"
+keywords = ["registry", "cleaner", "windows", "cleanup"]
+categories = ["command-line-utilities", "windows"]
 
 [dependencies]
-winapi = { version = "0.3.9", features = ["winbase", "securitybaseapi", "sddl", "winnt"] }
-serde = { version = "1.0.228", features = ["derive"] }
-winreg = "0.55.0"
-serde_yaml = "0.9.33"
+winreg = "0.55"
+winapi = { version = "0.3", features = [
+    "securitybaseapi",
+    "winnt",
+] }
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+opt-level = 0
