@@ -3,7 +3,7 @@
 
 # 使用
 
-右键`registry_cleaner.exe`使用管理员运行输入关键字即可
+右键`registry_cleaner.exe`使用管理员运行,按照软件提示输入即可
 
 # 构建
 
