@@ -393,7 +393,7 @@ impl RegistryDeleter {
     /// 询问用户是否删除当前项
     fn ask_user_confirmation(&self) -> bool {
         loop {
-            print!("是否删除? [Y | N | Q]: ");
+            print!("是否删除? [y | n | q]: ");
             io::stdout().flush().unwrap();
 
             let mut input = String::new();
@@ -401,14 +401,14 @@ impl RegistryDeleter {
             let input = input.trim().to_lowercase();
 
             match input.as_str() {
-                "Y" | "yes" => return true,
-                "N" | "no" => return false,
-                "Q" | "quit" | "exit" => {
+                "y" | "yes" => return true,
+                "n" | "no" => return false,
+                "q" | "quit" | "exit" => {
                     println!("退出删除操作");
                     std::process::exit(0);
                 }
                 _ => {
-                    println!("无效输入，请输入 Y | N | Q");
+                    println!("无效输入，请输入 y | n | q");
                     continue;
                 }
             }
