@@ -64,10 +64,13 @@ fn find_guid_in_path(path: &str) -> Option<String> {
 #[derive(Debug, Clone)]
 pub struct DeleteResult {
     pub success: bool,
+    #[allow(dead_code)]
     pub key_path: String,
+    #[allow(dead_code)]
     pub value_name: Option<String>,
     pub message: String,
     pub already_deleted: bool,
+    #[allow(dead_code)]
     pub deleted_parent_guid: bool,
     #[allow(dead_code)]
     pub skipped: bool,
@@ -390,7 +393,7 @@ impl RegistryDeleter {
     /// 询问用户是否删除当前项
     fn ask_user_confirmation(&self) -> bool {
         loop {
-            print!("是否删除？[y/n/q]: ");
+            print!("是否删除? [Y | N | Q]: ");
             io::stdout().flush().unwrap();
 
             let mut input = String::new();
@@ -398,14 +401,14 @@ impl RegistryDeleter {
             let input = input.trim().to_lowercase();
 
             match input.as_str() {
-                "y" | "yes" => return true,
-                "n" | "no" => return false,
-                "q" | "quit" | "exit" => {
+                "Y" | "yes" => return true,
+                "N" | "no" => return false,
+                "Q" | "quit" | "exit" => {
                     println!("退出删除操作");
                     std::process::exit(0);
                 }
                 _ => {
-                    println!("无效输入，请输入 y/n/q");
+                    println!("无效输入，请输入 Y | N | Q");
                     continue;
                 }
             }

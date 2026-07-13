@@ -87,7 +87,7 @@ fn read_non_empty_input(prompt: &str) -> String {
     loop {
         let input = read_input(prompt);
         if input.trim().is_empty() {
-            println!("输入不能为空，请重新输入");
+            println!("输入不能为空,请重新输入!");
         } else {
             return input;
         }
@@ -99,9 +99,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 检查管理员权限
     if !is_running_as_admin() {
         println!();
-        println!("⚠️  警告：权限不足！");
-        println!("注册表操作需要管理员权限。");
-        println!("请以管理员身份重新运行此程序。");
+        println!(" ⚠️ 警告:权限不足!");
+        println!("注册表操作需要管理员权限.");
+        println!("请以管理员身份重新运行此程序.");
         println!();
         press_any_key_to_continue();
         return Ok(());
@@ -112,11 +112,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 步骤1: 获取搜索关键字
     println!();
-    let keyword = read_non_empty_input("请输入搜索关键字: ");
+    let keyword = read_non_empty_input("请输入搜索关键字(不分大小写):");
     let keyword = keyword.trim();
 
     // 步骤2: 搜索注册表
-    println!("\n正在搜索 '{}'...", keyword);
+    println!("\n正在搜索符合要求的项目 '{}'...", keyword);
     let searcher = RegistrySearcher::new();
     let results = searcher.search_all(keyword)?;
 
@@ -126,15 +126,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    println!("找到 {} 个匹配项", results.len());
+    println!("一共找到 {} 个匹配项", results.len());
 
     // 步骤3: 显示详细结果
-    if confirm("是否查看详细结果？", true) {
+    if confirm("是否查看详细查找结果?", true) {
         display_detailed_results(&results);
     }
 
     // 步骤4: 删除操作
-    if confirm(&format!("是否开始删除这 {} 个项目？", results.len()), false) {
+    if confirm(&format!("是否开始删除这 {} 个项目?", results.len()), false) {
         let deleter = RegistryDeleter::new();
 
         // 准备删除项目列表
@@ -147,11 +147,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect();
 
         let delete_results = deleter.batch_delete(&delete_items);
-        display_delete_summary(&delete_results);
-
-        if confirm("是否查看详细删除结果？", false) {
-            display_detailed_delete_results(&delete_results);
-        }
+        display_delete_summary(&delete_results)
     }
 
     press_any_key_to_continue();
@@ -219,45 +215,6 @@ fn display_delete_summary(results: &[DeleteResult]) {
             (success as f32 / results.len() as f32) * 100.0
         );
     }
-}
-
-/// 显示详细删除结果
-fn display_detailed_delete_results(results: &[DeleteResult]) {
-    if results.is_empty() {
-        return;
-    }
-
-    println!();
-    println!("{}", "=".repeat(80));
-    println!("详细删除结果 (共 {} 项)", results.len());
-    println!("{}", "=".repeat(80));
-
-    for (i, r) in results.iter().enumerate() {
-        let status = if r.success {
-            if r.already_deleted {
-                "已删除/不存在"
-            } else if r.deleted_parent_guid {
-                "成功(删除父GUID)"
-            } else {
-                "成功"
-            }
-        } else if r.skipped {
-            "已跳过"
-        } else {
-            "失败"
-        };
-
-        println!("\n项目 [{}/{}] {}", i + 1, results.len(), status);
-        println!("{}", "=".repeat(80));
-        println!("路径: {}", r.key_path);
-        if let Some(name) = &r.value_name {
-            println!("值名: {}", name);
-        }
-        println!("消息: {}", r.message);
-        println!("{}", "=".repeat(80));
-    }
-
-    println!();
 }
 
 /// 等待用户按键
