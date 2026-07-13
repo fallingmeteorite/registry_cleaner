@@ -1,6 +1,5 @@
 [package]
 name = "registry_cleaner"
-version = "1.1.0"
 edition = "2021"
 description = "注册表清理工具 - 搜索并删除注册表中的匹配项"
 license = "MIT"
