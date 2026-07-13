@@ -13,13 +13,5 @@ winapi = { version = "0.3", features = [
     "securitybaseapi",
     "winnt",
 ] }
-
-[profile.release]
-lto = true
-strip = true
-opt-level = "z"
-codegen-units = 1
-panic = "abort"
-
-[profile.dev]
-opt-level = 0
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"

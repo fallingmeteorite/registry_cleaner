@@ -1,10 +1,65 @@
 //! 注册表搜索模块
+//!
+//! 白名单从 whitelist.yaml 加载（取 system_critical 部分），
+//! 若文件缺失或解析失败则使用内置默认白名单。
 
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Instant, Duration};
 use winreg::enums::*;
 use winreg::{RegKey, RegValue};
+
+// ---------- serde 依赖（需在 Cargo.toml 中添加） ----------
+use serde::Deserialize;
+
+/// 对应 YAML 根结构（只取 system_critical）
+#[derive(Debug, Deserialize)]
+struct YamlWhitelist {
+    system_critical: Vec<String>,
+}
+
+/// 白名单：基于键路径前缀匹配（不区分大小写）
+#[derive(Debug, Clone)]
+pub struct Whitelist {
+    prefixes: Vec<String>,
+}
+
+impl Whitelist {
+    #[allow(dead_code)]   // 消除警告：此方法目前仅内部使用，保留以备扩展
+    pub fn new(prefixes: Vec<String>) -> Self {
+        Self { prefixes }
+    }
+
+    /// 检查路径是否命中白名单（前缀匹配，不区分大小写）
+    pub fn is_whitelisted(&self, path: &str) -> bool {
+        let path_lower = path.to_lowercase();
+        self.prefixes.iter().any(|p| {
+            let p_lower = p.to_lowercase();
+            path_lower.starts_with(&p_lower)
+        })
+    }
+
+    /// 从 YAML 文件加载白名单（只取 system_critical）
+    pub fn from_yaml_file(path: &str) -> Option<Self> {
+        let content = std::fs::read_to_string(path).ok()?;
+        let parsed: YamlWhitelist = serde_yaml::from_str(&content).ok()?;
+        Some(Self::new(parsed.system_critical))
+    }
+}
+
+impl Default for Whitelist {
+    fn default() -> Self {
+        // 内置最小白名单（仅在无法加载 YAML 时使用）
+        let prefixes = vec![
+            "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet".to_string(),
+            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion".to_string(),
+            "HKEY_CLASSES_ROOT\\CLSID".to_string(),
+        ];
+        Self { prefixes }
+    }
+}
+
+// ---------- 以下为原有代码，仅改动搜索器中的白名单加载 ----------
 
 /// 匹配类型
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,7 +129,7 @@ impl Default for SearchConfig {
     }
 }
 
-/// 进度条结构
+// ---------- 进度条（保持不变） ----------
 struct ProgressBar {
     total: usize,
     current: usize,
@@ -100,16 +155,12 @@ impl ProgressBar {
         if !self.enabled {
             return;
         }
-
         self.current = current;
-
-        // 限制更新频率，避免闪烁
         let now = Instant::now();
         if now.duration_since(self.last_update) < Duration::from_millis(100) && current < self.total {
             return;
         }
         self.last_update = now;
-
         self.render();
     }
 
@@ -117,20 +168,16 @@ impl ProgressBar {
         if !self.enabled {
             return;
         }
-
         let percent = if self.total > 0 {
-            self.current as f64 / self.total as f64 * 100.0  // 移除了不必要的括号
+            self.current as f64 / self.total as f64 * 100.0
         } else {
             0.0
         };
-
         let filled = ((percent / 100.0) * self.width as f64) as usize;
         let empty = self.width - filled;
-
         let elapsed = self.start_time.elapsed();
         let elapsed_str = format_duration(elapsed);
 
-        // 估算剩余时间
         let eta = if self.current > 0 && self.total > 0 && self.current < self.total {
             let elapsed_secs = elapsed.as_secs_f64();
             let total_secs = elapsed_secs / (self.current as f64) * (self.total as f64);
@@ -146,7 +193,6 @@ impl ProgressBar {
             "计算中...".to_string()
         };
 
-        // 使用ANSI转义序列清除当前行并移动光标到行首
         print!("\r\x1b[2K");
         print!("[{}{}] {:>3}% ({}/{}) | 已用: {} | 剩余: {}",
                "█".repeat(filled),
@@ -157,8 +203,6 @@ impl ProgressBar {
                elapsed_str,
                eta
         );
-
-        // 如果完成，换行
         if self.current >= self.total {
             println!();
         }
@@ -173,13 +217,11 @@ impl ProgressBar {
     }
 }
 
-/// 格式化时间
 fn format_duration(duration: Duration) -> String {
     let total_secs = duration.as_secs();
     let hours = total_secs / 3600;
     let minutes = (total_secs % 3600) / 60;
     let seconds = total_secs % 60;
-
     if hours > 0 {
         format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
     } else {
@@ -187,18 +229,33 @@ fn format_duration(duration: Duration) -> String {
     }
 }
 
-/// 注册表搜索器
+// ---------- 注册表搜索器 ----------
 pub struct RegistrySearcher {
     config: SearchConfig,
     found_count: AtomicUsize,
+    whitelist: Whitelist,
 }
 
 impl RegistrySearcher {
     pub fn new() -> Self {
+        // 尝试加载 whitelist.yaml，若失败则使用内置默认
+        let whitelist = Whitelist::from_yaml_file("whitelist.yaml")
+            .unwrap_or_else(|| {
+                eprintln!("⚠️ 未找到 whitelist.yaml 或解析失败，使用内置默认白名单");
+                Whitelist::default()
+            });
+
         Self {
             config: SearchConfig::default(),
             found_count: AtomicUsize::new(0),
+            whitelist,
         }
+    }
+
+    #[allow(dead_code)]   // 消除警告：此方法暂未外部调用，保留以备扩展
+    pub fn with_whitelist(mut self, whitelist: Whitelist) -> Self {
+        self.whitelist = whitelist;
+        self
     }
 
     pub fn search_all(&self, keyword: &str) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
@@ -212,7 +269,6 @@ impl RegistrySearcher {
 
         let mut all_results = Vec::new();
 
-        // 计算总键数用于进度条
         println!("正在统计注册表键数量...");
         let total_keys = self.count_total_keys(&roots)?;
         let mut progress = ProgressBar::new(total_keys, true);
@@ -249,7 +305,6 @@ impl RegistrySearcher {
         self.found_count.store(0, Ordering::Relaxed);
         let mut results = Vec::new();
 
-        // 计算当前根键下的总键数
         let total_keys = self.count_keys_recursive(&key)?;
         let mut progress = ProgressBar::new(total_keys, true);
         println!("正在搜索 {} (共 {} 个键)...", root_name, total_keys);
@@ -263,7 +318,6 @@ impl RegistrySearcher {
         Ok(results)
     }
 
-    /// 计算注册表根键下的总键数
     fn count_total_keys(&self, roots: &[(winreg::HKEY, &str)]) -> Result<usize, Box<dyn std::error::Error>> {
         let mut total = 0;
         for (root_key, _) in roots {
@@ -274,7 +328,7 @@ impl RegistrySearcher {
     }
 
     fn count_keys_recursive(&self, key: &RegKey) -> Result<usize, Box<dyn std::error::Error>> {
-        let mut count = 1; // 当前键
+        let mut count = 1;
         let subkeys: Vec<String> = key.enum_keys().filter_map(Result::ok).collect();
         for subkey_name in subkeys {
             if let Ok(subkey) = key.open_subkey(&subkey_name) {
@@ -305,6 +359,7 @@ impl RegistrySearcher {
         Ok(results)
     }
 
+    /// 递归搜索（白名单检查：跳过匹配的子树）
     fn search_recursive(
         &self,
         key: &RegKey,
@@ -321,9 +376,16 @@ impl RegistrySearcher {
             format!("{}\\{}", root_name, current_path)
         };
 
+        // ---------- 白名单检查 ----------
+        if self.whitelist.is_whitelisted(&full_path) {
+            *processed += 1;
+            progress.update(*processed);
+            return Ok(());
+        }
+
+        // 搜索当前键
         self.search_current_key(key, &full_path, current_path, keyword, results);
 
-        // 更新进度
         *processed += 1;
         progress.update(*processed);
 
@@ -439,7 +501,7 @@ impl Default for RegistrySearcher {
     }
 }
 
-/// 格式化注册表值为可读字符串
+// ---------- 注册表值格式化（保持不变） ----------
 pub fn format_registry_value(value: &RegValue) -> String {
     match value.vtype {
         REG_SZ | REG_EXPAND_SZ => format_string_value(value),
@@ -456,7 +518,6 @@ fn format_string_value(value: &RegValue) -> String {
     if bytes.len() < 2 {
         return String::new();
     }
-    // 确保是偶数长度
     let len = bytes.len() / 2 * 2;
     let chars: Vec<u16> = bytes[..len]
         .chunks_exact(2)
@@ -506,7 +567,6 @@ fn format_multi_string_value(value: &RegValue) -> String {
             current.push(code);
         }
     }
-    // 处理最后一个非空字符串
     if !current.is_empty() {
         strings.push(String::from_utf16_lossy(&current));
     }
