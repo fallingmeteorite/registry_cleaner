@@ -1,7 +1,7 @@
 //! 注册表搜索模块
 //!
 //! 白名单从 whitelist.yaml 加载（取 system_critical 部分），
-//! 若文件缺失或解析失败则使用内置默认白名单。
+//! 若文件缺失或解析失败则使用空白名单（不跳过任何路径）。
 
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -9,7 +9,7 @@ use std::time::{Instant, Duration};
 use winreg::enums::*;
 use winreg::{RegKey, RegValue};
 
-// ---------- serde 依赖（需在 Cargo.toml 中添加） ----------
+// ---------- serde 依赖 ----------
 use serde::Deserialize;
 
 /// 对应 YAML 根结构（只取 system_critical）
@@ -25,7 +25,7 @@ pub struct Whitelist {
 }
 
 impl Whitelist {
-    #[allow(dead_code)]   // 消除警告：此方法目前仅内部使用，保留以备扩展
+    #[allow(dead_code)]
     pub fn new(prefixes: Vec<String>) -> Self {
         Self { prefixes }
     }
@@ -47,21 +47,9 @@ impl Whitelist {
     }
 }
 
-impl Default for Whitelist {
-    fn default() -> Self {
-        // 内置最小白名单（仅在无法加载 YAML 时使用）
-        let prefixes = vec![
-            "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet".to_string(),
-            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion".to_string(),
-            "HKEY_CLASSES_ROOT\\CLSID".to_string(),
-        ];
-        Self { prefixes }
-    }
-}
+// 注意：不再提供 Default 实现，没有任何内置白名单
 
-// ---------- 以下为原有代码，仅改动搜索器中的白名单加载 ----------
-
-/// 匹配类型
+// ---------- 匹配类型 ----------
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MatchType {
     Item,   // 键名匹配
@@ -129,7 +117,7 @@ impl Default for SearchConfig {
     }
 }
 
-// ---------- 进度条（保持不变） ----------
+// ---------- 进度条 ----------
 struct ProgressBar {
     total: usize,
     current: usize,
@@ -238,11 +226,11 @@ pub struct RegistrySearcher {
 
 impl RegistrySearcher {
     pub fn new() -> Self {
-        // 尝试加载 whitelist.yaml，若失败则使用内置默认
+        // 尝试加载 whitelist.yaml，若失败则使用空白名单（不跳过任何路径）
         let whitelist = Whitelist::from_yaml_file("whitelist.yaml")
             .unwrap_or_else(|| {
-                eprintln!("⚠️ 未找到 whitelist.yaml 或解析失败，使用内置默认白名单");
-                Whitelist::default()
+                eprintln!("⚠️ 未找到 whitelist.yaml 或解析失败，使用空白名单（不跳过任何路径）");
+                Whitelist::new(Vec::new())
             });
 
         Self {
@@ -252,7 +240,7 @@ impl RegistrySearcher {
         }
     }
 
-    #[allow(dead_code)]   // 消除警告：此方法暂未外部调用，保留以备扩展
+    #[allow(dead_code)]
     pub fn with_whitelist(mut self, whitelist: Whitelist) -> Self {
         self.whitelist = whitelist;
         self
@@ -501,7 +489,7 @@ impl Default for RegistrySearcher {
     }
 }
 
-// ---------- 注册表值格式化（保持不变） ----------
+// ---------- 注册表值格式化 ----------
 pub fn format_registry_value(value: &RegValue) -> String {
     match value.vtype {
         REG_SZ | REG_EXPAND_SZ => format_string_value(value),
