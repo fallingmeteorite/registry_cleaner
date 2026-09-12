@@ -1,0 +1,126 @@
+# ======================================================================
+# 注册表清理工具 - 系统关键路径白名单
+# 说明：以下路径及其所有子键均不会被搜索/删除（前缀匹配，不区分大小写）
+# 版本：2.1（2026-07-13）
+# ======================================================================
+
+system_critical:
+  # -------------------- 硬件抽象层与系统核心 --------------------
+  - HKEY_LOCAL_MACHINE\HARDWARE                # 硬件描述、设备映射、资源分配（动态生成，删除后蓝屏）
+  - HKEY_LOCAL_MACHINE\SYSTEM                 # 系统控制集、驱动程序、服务配置（删除后无法启动）
+  - HKEY_LOCAL_MACHINE\BCD00000000            # 引导配置数据库（删除后系统无法引导）
+
+  # -------------------- 安全与账户管理 --------------------
+  - HKEY_LOCAL_MACHINE\SAM                    # 安全账户管理器（用户密码哈希，删除后用户无法登录）
+  - HKEY_LOCAL_MACHINE\SECURITY               # 本地安全策略（删除后权限异常）
+
+  # -------------------- COM / DCOM 组件注册 --------------------
+  - HKEY_CLASSES_ROOT\CLSID                   # COM 类标识符（系统组件通信依赖）
+  - HKEY_CLASSES_ROOT\Interface               # COM 接口定义
+  - HKEY_CLASSES_ROOT\AppID                   # COM 应用程序标识（DCOM 安全配置）
+  - HKEY_CLASSES_ROOT\TypeLib                 # 类型库（自动化调用依赖）
+
+  # -------------------- Windows NT 内核与子系统 --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion
+  # 包含 Winlogon、驱动、打印、终端服务、用户配置文件等核心配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing
+  # Windows 更新核心（CBS），删除后更新失效
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\SideBySide
+  # WinSxS 并行程序集配置，删除后大量软件无法运行
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer
+  # Windows Installer 数据库，删除后软件卸载/回滚异常
+
+  # -------------------- 系统服务与驱动程序 --------------------
+  - HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services
+  # 所有系统服务与驱动程序配置（删除后服务大面积失效）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverDatabase
+  # 驱动程序签名和存储库（新设备识别依赖）
+
+  # -------------------- 系统启动与恢复 --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore
+  # 系统还原配置（还原点管理）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Recovery
+  # Windows 恢复环境（WinRE）配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup
+  # 安装程序配置（影响更新和功能安装）
+
+  # -------------------- 网络与通信 --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings
+  # 系统级网络代理、TLS、连接超时设置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Winsock
+  # Windows 套接字（TCP/IP 协议栈）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Telephony
+  # 电话 API 配置（调制解调器、VoIP）
+
+  # -------------------- 设备与外围 --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WUDF
+  # 用户模式驱动程序框架（USB、摄像头等）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\EFS
+  # 加密文件系统（加密文件解密依赖）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT
+  # Windows 事件日志服务配置
+
+  # -------------------- 组策略与企业策略 --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy
+  # 已应用的组策略历史
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies
+  # 系统策略项（启动脚本、安全限制等）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Policies
+  # 策略存储根目录（含第三方软件策略）
+
+  # -------------------- 安全中心与防护 --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender
+  # Windows Defender 完整配置（实时防护、排除列表等）
+
+  # -------------------- 用户默认配置与系统账户 --------------------
+  - HKEY_USERS\.DEFAULT
+  # 默认用户配置文件模板
+  - HKEY_USERS\S-1-5-18                     # LocalSystem 账户
+  - HKEY_USERS\S-1-5-19                     # LocalService 账户
+  - HKEY_USERS\S-1-5-20                     # NetworkService 账户
+  - HKEY_USERS\S-1-5-21                     # 所有本地用户账户（注意：会匹配所有本地用户SID）
+
+  # -------------------- 当前硬件配置文件 --------------------
+  - HKEY_CURRENT_CONFIG                     # 当前硬件配置（显示、电源、外设等）
+
+  # -------------------- 其他系统级关键位置 --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication
+  # Windows 身份验证机制（NTLM、Kerberos）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability
+  # 系统可靠性监控数据
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices
+  # 系统级服务启动项（旧系统保留）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServicesOnce
+  # 一次性服务启动项
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce
+  # 系统级一次性启动项（安装程序清理用）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths
+  # 系统已知应用程序路径（如记事本、计算器）
+
+  # -------------------- 新增补充（更全面覆盖） --------------------
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate
+  # Windows 更新服务配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Event Viewer
+  # 事件查看器配置（日志大小、保留策略）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\SharedDLLs
+  # 共享 DLL 引用计数（卸载依赖）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Fonts
+  # 系统字体注册表（字体缺失会导致显示异常）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\GraphicsDrivers
+  # 图形驱动配置（分辨率、刷新率）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices
+  # 音频设备管理（默认设备、端点）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Device Manager
+  # 设备管理器设置（显示隐藏设备等）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Power
+  # 电源管理方案（睡眠、休眠、电源按钮）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Management
+  # 应用程序管理策略（软件限制）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx
+  # 现代应用（AppX）部署配置
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Crypto
+  # 加密服务配置（证书、算法）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager
+  # 功能访问管理（麦克风、摄像头权限）
+  - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
+  # 系统级资源管理器设置（影响任务栏、开始菜单等）
