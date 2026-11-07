@@ -1,25 +1,29 @@
 //! 注册表删除模块
-//! 提供注册表项删除功能
+//!
+//! 提供单个键/值的删除能力，并针对路径中的 GUID 子键做了特殊处理：
+//! 一旦路径中出现形如 `{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}` 的 GUID 段，
+//! 会直接删除该 GUID 所在的父键（含其下所有子项），而不是只删 GUID 下面的某一层。
 
-use crate::registry_search::format_registry_value;
-use std::io::{self, Write};
 use winreg::enums::*;
 use winreg::{RegKey, HKEY};
 
-// ============================================================
-// GUID 路径解析
-// ============================================================
-
-/// 检查路径中是否包含 GUID 并返回包含 GUID 的路径前缀
+/// 在路径中查找第一个完整 GUID 段，并返回"包含该 GUID 的路径前缀"。
+///
+/// GUID 段格式：`{8-4-4-4-12}`，共 36 个字符 + 2 个花括号 = 38 字符。
+/// 要求 GUID 后面要么是路径分隔符 `\`，要么已经是路径结尾，避免误匹配
+/// `{...}abc` 这类把 GUID 当名字一部分的场景。
+///
+/// 返回示例：
+/// - 输入 `HKLM\Software\Classes\CLSID\{ABCD...}\InprocServer32`
+/// - 返回 `HKLM\Software\Classes\CLSID\{ABCD...}`
 fn find_guid_in_path(path: &str) -> Option<String> {
-    // GUID 格式: {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}
     let bytes = path.as_bytes();
     let mut i = 0;
 
     while i < bytes.len() {
         if bytes[i] == b'{' {
             let start = i;
-            // 格式: {8-4-4-4-12} 共 36 个字符 + 2 个花括号 = 38
+            // 固定位置校验：8-4-4-4-12 之间必须有 '-'，末尾必须有 '}'
             if i + 37 < bytes.len()
                 && bytes[i + 9] == b'-'
                 && bytes[i + 14] == b'-'
@@ -27,7 +31,7 @@ fn find_guid_in_path(path: &str) -> Option<String> {
                 && bytes[i + 24] == b'-'
                 && bytes[i + 37] == b'}'
             {
-                // 检查所有字符是否为合法十六进制或 '-'
+                // 花括号内部只允许十六进制字符和 '-'
                 let mut valid = true;
                 for j in (i + 1)..(i + 37) {
                     let c = bytes[j];
@@ -41,8 +45,8 @@ fn find_guid_in_path(path: &str) -> Option<String> {
                     }
                 }
                 if valid {
-                    let guid_end = i + 38; // 包括 '}'
-                                           // GUID 后面必须是路径分隔符或结束
+                    let guid_end = i + 38; // 含结尾的 '}'
+                                           // GUID 之后必须是 '\' 或字符串结束
                     if guid_end == bytes.len() || bytes[guid_end] == b'\\' {
                         let guid_str = String::from_utf8_lossy(&bytes[start..guid_end]).to_string();
                         let path_str = String::from_utf8_lossy(bytes).to_string();
@@ -58,27 +62,27 @@ fn find_guid_in_path(path: &str) -> Option<String> {
     None
 }
 
-// ============================================================
-// 删除结果
-// ============================================================
-
-/// 删除结果
+/// 单条删除的结果。
+///
+/// 字段含义：
+/// - `success`：操作是否成功（`already_deleted` 的条目 `success` 也为 true）。
+/// - `key_path`：发起删除时使用的原始路径（便于 UI 展示）。
+/// - `value_name`：删除的是"值"时记录值名，删除"键"时为 `None`。
+/// - `message`：给用户看的说明文字（失败时即失败原因）。
+/// - `already_deleted`：目标本来就不存在（不算失败，但也不计成功）。
+/// - `skipped`：用户主动跳过；当前 GUI 流程不会产生该状态，保留用于兼容未来。
 #[derive(Debug, Clone)]
 pub struct DeleteResult {
     pub success: bool,
-    #[allow(dead_code)]
     pub key_path: String,
-    #[allow(dead_code)]
     pub value_name: Option<String>,
     pub message: String,
     pub already_deleted: bool,
-    #[allow(dead_code)]
-    pub deleted_parent_guid: bool,
-    #[allow(dead_code)]
     pub skipped: bool,
 }
 
 impl DeleteResult {
+    /// 构造"删除成功"的结果。
     pub fn success(key_path: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
             success: true,
@@ -86,11 +90,11 @@ impl DeleteResult {
             value_name: None,
             message: message.into(),
             already_deleted: false,
-            deleted_parent_guid: false,
             skipped: false,
         }
     }
 
+    /// 构造"删除失败"的结果（例如权限不足、路径无法解析等）。
     pub fn failure(key_path: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
             success: false,
@@ -98,11 +102,12 @@ impl DeleteResult {
             value_name: None,
             message: message.into(),
             already_deleted: false,
-            deleted_parent_guid: false,
             skipped: false,
         }
     }
 
+    /// 构造"目标本来就不存在"的结果。
+    /// 注意 `success` 仍为 true，UI 侧应优先根据 `already_deleted` 分类展示。
     pub fn already_deleted(key_path: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
             success: true,
@@ -110,34 +115,21 @@ impl DeleteResult {
             value_name: None,
             message: message.into(),
             already_deleted: true,
-            deleted_parent_guid: false,
             skipped: false,
-        }
-    }
-
-    pub fn skipped(key_path: impl Into<String>, message: impl Into<String>) -> Self {
-        Self {
-            success: false,
-            key_path: key_path.into(),
-            value_name: None,
-            message: message.into(),
-            already_deleted: false,
-            deleted_parent_guid: false,
-            skipped: true,
         }
     }
 }
 
-// ============================================================
-// 注册表删除器
-// ============================================================
-
-/// 注册表删除器
+/// 注册表删除器。
+///
+/// 目前只暴露一个可配置项 `delete_guid_parent`：是否把"删除 GUID 下的子项"
+/// 升级为"直接删除整个 GUID 父键"。默认开启，与工具的设计意图一致。
 pub struct RegistryDeleter {
     delete_guid_parent: bool,
 }
 
 impl RegistryDeleter {
+    /// 创建删除器；默认开启 GUID 父键级联删除。
     pub fn new() -> Self {
         Self {
             delete_guid_parent: true,
@@ -146,7 +138,15 @@ impl RegistryDeleter {
 
     // ---------------- 单个删除 ----------------
 
+    /// 删除指定键下的某个值。
+    ///
+    /// 流程：
+    /// 1. 若路径中含 GUID 且启用了 GUID 父键删除，则转交 `delete_guid_parent_directory`；
+    /// 2. 否则解析根键并打开子键（需要 READ | WRITE）；
+    /// 3. 枚举值确认目标确实存在（不存在按 "already_deleted" 返回）；
+    /// 4. 调用 `delete_value` 执行删除，`ERROR_FILE_NOT_FOUND` 视为已不存在。
     pub fn delete_value(&self, key_path: &str, value_name: &str) -> DeleteResult {
+        // GUID 路径优先走父键级联删除，避免留下空壳
         if let Some(parent_guid) = self.should_delete_parent_guid(key_path) {
             return self.delete_guid_parent_directory(&parent_guid, key_path, Some(value_name));
         }
@@ -156,6 +156,7 @@ impl RegistryDeleter {
             Err(e) => return DeleteResult::failure(key_path, e),
         };
 
+        // 打开目标键（读 + 写），失败时按 OS 错误码区分"不存在"与"其他失败"
         let key = match RegKey::predef(root).open_subkey_with_flags(&subkey, KEY_READ | KEY_WRITE) {
             Ok(k) => k,
             Err(e) => {
@@ -166,7 +167,7 @@ impl RegistryDeleter {
             }
         };
 
-        // 检查值是否存在
+        // 枚举检查值是否存在；不存在就直接返回，不必调用 DeleteValue
         let exists = key
             .enum_values()
             .any(|r| r.is_ok_and(|(name, _)| name == value_name));
@@ -186,6 +187,13 @@ impl RegistryDeleter {
         }
     }
 
+    /// 删除一个注册表键（连同其全部子键、值）。
+    ///
+    /// 流程：
+    /// 1. 若路径中含 GUID 且启用了 GUID 父键删除，则转交 `delete_guid_parent_directory`；
+    /// 2. 拆分父键路径与键名，打开父键；
+    /// 3. 探测目标键是否存在；
+    /// 4. 调用 `delete_subkey_all` 递归删除。
     pub fn delete_key(&self, key_path: &str) -> DeleteResult {
         if let Some(parent_guid) = self.should_delete_parent_guid(key_path) {
             return self.delete_guid_parent_directory(&parent_guid, key_path, None);
@@ -196,13 +204,14 @@ impl RegistryDeleter {
             Err(e) => return DeleteResult::failure(key_path, e),
         };
 
+        // 不允许删除根键本身
         if subkey.is_empty() {
             return DeleteResult::failure(key_path, "不能删除根键");
         }
 
         let (parent_path, key_name) = self.split_key_path(&subkey);
 
-        // 父路径为空 → 要删除的是根键下的直接子键
+        // 父路径为空说明目标是根键的直接子键，直接用根句柄
         let parent = if parent_path.is_empty() {
             RegKey::predef(root)
         } else {
@@ -217,7 +226,7 @@ impl RegistryDeleter {
             }
         };
 
-        // 检查键是否存在
+        // 先探测目标键是否存在，避免 delete_subkey_all 对不存在键产生歧义错误
         if parent.open_subkey(key_name).is_err() {
             return DeleteResult::already_deleted(key_path, "键不存在");
         }
@@ -234,241 +243,10 @@ impl RegistryDeleter {
         }
     }
 
-    // ---------------- 批量删除 ----------------
-
-    /// 批量删除，每个项目都询问用户确认
-    pub fn batch_delete(&self, items: &[(&str, Option<&str>)]) -> Vec<DeleteResult> {
-        let mut results = Vec::with_capacity(items.len());
-
-        // ---------- 顶部标题 ----------
-        println!();
-        println!("  ─────────────────────────────────────────────────────");
-        println!("              🗑️  注册表删除确认");
-        println!("  ─────────────────────────────────────────────────────");
-        println!("     待处理项目: {}", items.len());
-        println!("  ─────────────────────────────────────────────────────");
-
-        for (index, (path, value_name)) in items.iter().enumerate() {
-            let exists = match value_name {
-                Some(name) => self.check_value_exists(path, name),
-                None => self.check_key_exists(path),
-            };
-
-            // ---------- 项目卡片 ----------
-            println!();
-            println!(
-                "  ── 项目 [{}/{}] ──────────────────────────────",
-                index + 1,
-                items.len()
-            );
-
-            match value_name {
-                Some(name) => {
-                    println!("     操作  : 删除值");
-                    println!("     路径  : {}", path);
-                    println!("     值名  : {}", name);
-
-                    if !exists {
-                        println!("     状态  : ❌ 值不存在");
-                        println!("  ──────────────────────────────────────────────");
-
-                        let result =
-                            DeleteResult::already_deleted(*path, format!("值 '{}' 不存在", name));
-                        results.push(result);
-                        continue;
-                    }
-
-                    let data = self
-                        .get_value_data(path, name)
-                        .unwrap_or_else(|| "<无法读取>".to_string());
-                    println!("     数据  : {}", data);
-                }
-                None => {
-                    println!("     操作  : 删除键及其所有子项");
-                    println!("     路径  : {}", path);
-
-                    if !exists {
-                        println!("     状态  : ❌ 键不存在");
-                        println!("  ──────────────────────────────────────────────");
-
-                        let result = DeleteResult::already_deleted(*path, "键不存在".to_string());
-                        results.push(result);
-                        continue;
-                    }
-                }
-            }
-
-            println!("  ──────────────────────────────────────────────");
-
-            // ---------- 询问确认 ----------
-            if !self.ask_user_confirmation() {
-                let result = DeleteResult::skipped(
-                    *path,
-                    match value_name {
-                        Some(name) => format!("已跳过值 '{}'", name),
-                        None => "已跳过".to_string(),
-                    },
-                );
-                results.push(result);
-                continue;
-            }
-
-            // ---------- 执行删除 ----------
-            let result = match value_name {
-                Some(name) => self.delete_value(path, name),
-                None => self.delete_key(path),
-            };
-
-            print!("  ");
-            if result.success {
-                if result.already_deleted {
-                    println!("ℹ️  {}", result.message);
-                } else if result.deleted_parent_guid {
-                    println!("🧹 {}", result.message);
-                } else {
-                    println!("✅ {}", result.message);
-                }
-            } else if result.skipped {
-                println!("⏭️  {}", result.message);
-            } else {
-                println!("❌ {}", result.message);
-            }
-
-            results.push(result);
-        }
-
-        // ---------- 总结 ----------
-        if !results.is_empty() {
-            let success_count = results
-                .iter()
-                .filter(|r| r.success && !r.already_deleted)
-                .count();
-            let already_deleted_count = results.iter().filter(|r| r.already_deleted).count();
-            let skipped_count = results.iter().filter(|r| r.skipped).count();
-            let failed_count =
-                results.len() - success_count - already_deleted_count - skipped_count;
-
-            println!();
-            println!("  ─────────────────────────────────────────────────────");
-            println!("              📋 删除完成");
-            println!("  ─────────────────────────────────────────────────────");
-            println!("     成功      : {}", success_count);
-            println!("     已不存在  : {}", already_deleted_count);
-            println!("     已跳过    : {}", skipped_count);
-            println!("     失败      : {}", failed_count);
-            println!("  ─────────────────────────────────────────────────────");
-            println!();
-        }
-
-        results
-    }
-
-    // ---------------- 存在性 / 数据读取 ----------------
-
-    /// 检查值是否存在
-    fn check_value_exists(&self, key_path: &str, value_name: &str) -> bool {
-        let (root, subkey) = match self.parse_registry_path(key_path) {
-            Ok(parsed) => parsed,
-            Err(_) => return false,
-        };
-
-        let key = match RegKey::predef(root).open_subkey_with_flags(&subkey, KEY_READ) {
-            Ok(k) => k,
-            Err(_) => return false,
-        };
-
-        key.enum_values()
-            .any(|r| r.is_ok_and(|(name, _)| name == value_name))
-    }
-
-    /// 检查键是否存在
-    fn check_key_exists(&self, key_path: &str) -> bool {
-        let (root, subkey) = match self.parse_registry_path(key_path) {
-            Ok(parsed) => parsed,
-            Err(_) => return false,
-        };
-
-        if subkey.is_empty() {
-            return false;
-        }
-
-        let (parent_path, key_name) = self.split_key_path(&subkey);
-
-        let parent = if parent_path.is_empty() {
-            RegKey::predef(root)
-        } else {
-            match RegKey::predef(root).open_subkey_with_flags(parent_path, KEY_READ) {
-                Ok(p) => p,
-                Err(_) => return false,
-            }
-        };
-
-        parent.open_subkey(key_name).is_ok()
-    }
-
-    /// 获取值数据（用于显示）
-    fn get_value_data(&self, key_path: &str, value_name: &str) -> Option<String> {
-        let (root, subkey) = match self.parse_registry_path(key_path) {
-            Ok(parsed) => parsed,
-            Err(_) => return None,
-        };
-
-        let key = match RegKey::predef(root).open_subkey_with_flags(&subkey, KEY_READ) {
-            Ok(k) => k,
-            Err(_) => return None,
-        };
-
-        for value_result in key.enum_values() {
-            if let Ok((name, value)) = value_result {
-                if name == value_name {
-                    return Some(format_registry_value(&value));
-                }
-            }
-        }
-        None
-    }
-
-    // ---------------- 用户交互 ----------------
-
-    /// 询问用户是否删除当前项。
-    /// EOF / IO 错误时视为跳过（返回 false），而不是 panic。
-    fn ask_user_confirmation(&self) -> bool {
-        loop {
-            print!("  ❓ 是否删除? [y] 是 / [n] 否 / [q] 退出: ");
-            let _ = io::stdout().flush();
-
-            let mut input = String::new();
-            if io::stdin().read_line(&mut input).is_err() {
-                // stdin 关闭 / IO 错误 → 视为跳过，避免死循环
-                println!();
-                println!("  ⚠️  无法读取输入，已跳过当前项");
-                return false;
-            }
-            let input = input.trim().to_lowercase();
-
-            match input.as_str() {
-                "y" | "yes" => return true,
-                "n" | "no" => return false,
-                "q" | "quit" | "exit" => {
-                    println!("  👋 退出删除操作");
-                    std::process::exit(0);
-                }
-                "" => {
-                    // EOF（read_line 返回 Ok(0) 时 input 为空）
-                    // 或用户直接回车，都视为跳过
-                    println!("  ⚠️  未输入，已跳过当前项");
-                    return false;
-                }
-                _ => {
-                    println!("  ⚠️  无效输入，请输入 y / n / q");
-                    continue;
-                }
-            }
-        }
-    }
-
     // ---------------- GUID 父目录处理 ----------------
 
+    /// 判断路径里是否有 GUID 段，并返回含 GUID 的前缀路径。
+    /// 若未启用该特性则直接返回 `None`。
     fn should_delete_parent_guid(&self, path: &str) -> Option<String> {
         if !self.delete_guid_parent {
             return None;
@@ -476,14 +254,18 @@ impl RegistryDeleter {
         find_guid_in_path(path)
     }
 
+    /// 删除 `parent_guid_path` 指向的 GUID 父键（递归删除其全部内容）。
+    ///
+    /// 参数：
+    /// - `parent_guid_path`：含 GUID 的前缀路径（已由 `find_guid_in_path` 截出）。
+    /// - `original_path`：用户最初请求删除的路径，仅用于结果里的展示。
+    /// - `value_name`：原请求若为"删除值"，则记录下来；"删除键"时为 `None`。
     fn delete_guid_parent_directory(
         &self,
         parent_guid_path: &str,
         original_path: &str,
         value_name: Option<&str>,
     ) -> DeleteResult {
-        println!("  🧹 删除 GUID 父目录: {}", parent_guid_path);
-
         let (root, subkey) = match self.parse_registry_path(parent_guid_path) {
             Ok(parsed) => parsed,
             Err(e) => {
@@ -521,7 +303,6 @@ impl RegistryDeleter {
                 value_name: value_name.map(String::from),
                 message: format!("已删除 GUID 父目录: {}", parent_guid_path),
                 already_deleted: false,
-                deleted_parent_guid: true,
                 skipped: false,
             },
             Err(e) => DeleteResult::failure(original_path, format!("删除 GUID 目录失败: {}", e)),
@@ -530,6 +311,11 @@ impl RegistryDeleter {
 
     // ---------------- 路径解析 ----------------
 
+    /// 把 "根键 + 子路径" 形式的字符串拆成 `(HKEY, 子路径)`。
+    ///
+    /// - 支持长短两种根键写法（HKEY_LOCAL_MACHINE / HKLM 等）。
+    /// - 允许前导 `\` 或 `\\`，方便直接粘贴注册表编辑器里的路径。
+    /// - 找不到根键时返回错误字符串，由调用方封装为 `DeleteResult::failure`。
     fn parse_registry_path(&self, path: &str) -> Result<(HKEY, String), String> {
         let trimmed = path.trim_start_matches("\\\\").trim_start_matches('\\');
         if trimmed.is_empty() {
@@ -556,6 +342,8 @@ impl RegistryDeleter {
         Ok((root_key, subkey))
     }
 
+    /// 把子路径拆成 `(父路径, 末段键名)`。
+    /// 没有分隔符时返回 `("", 原路径)`，表示目标挂在根键下。
     fn split_key_path<'a>(&self, path: &'a str) -> (&'a str, &'a str) {
         path.rfind('\\')
             .map(|pos| {
